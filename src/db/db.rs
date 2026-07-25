@@ -31,7 +31,7 @@ impl Database {
 
     pub async fn add_word(&self, japanese: &str, english: &str) -> Result<(), sqlx::Error> {
         sqlx::query(
-            "INSERT INTO words
+            "INSERT INTO words (japanese, english)
             VALUES (?, ?)", 
         )
         .bind(japanese)

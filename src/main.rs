@@ -22,7 +22,7 @@ enum Commands {
         #[arg(short, long)]
         verbose: bool
     },
-    Save {
+    Add {
         japanese: String,
     },
     List
@@ -32,7 +32,7 @@ enum Commands {
 async fn main() {
 
     let args = Args::parse();
-    let db = match Database::init_db("sqlite://jp.db").await {
+    let db = match Database::init_db("sqlite://jp.db?mode=rwc").await {
         Ok(db) => db,
         Err(error) => {
             eprint!("Failed to connect to database: {error}");
@@ -42,8 +42,8 @@ async fn main() {
 
     match args.cmd {
         Commands::Imi { key, verbose } => imi_handler(&key, verbose).await,
-        Commands::Save { japanese } => save_handler(&japanese, &db).await,
-        Commands::List => todo!(),
+        Commands::Add { japanese } => add_handler(&japanese, &db).await,
+        Commands::List => list_handler(&db).await,
     }
 }
 
@@ -80,7 +80,7 @@ async fn imi_handler(key: &str, verbose: bool) {
     }
 }
 
-async fn save_handler(japanese: &str, db: &Database) {
+async fn add_handler(japanese: &str, db: &Database) {
     let response = match get_meaning(japanese).await {
         Ok(response) => response,
         Err(error) => {
@@ -93,5 +93,16 @@ async fn save_handler(japanese: &str, db: &Database) {
 
     if let Err(error) = db.add_word(japanese, meaning).await {
         eprint!("Error: {error}");
+    }
+}
+
+async fn list_handler(db: &Database) {
+    match db.list_words().await {
+        Ok(words) => {
+            for word in words {
+                println!("{}: {}", word.japanese, word.english);
+            }
+        },
+        Err(error) => eprint!("Error: {error}")
     }
 }
