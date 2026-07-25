@@ -1,9 +1,11 @@
 mod models;
 mod api;
+mod db;
 
 use clap::{Parser, Subcommand};
 
-use crate::{api::get_meaning};
+use crate::{api::get_meaning, models::Sense};
+use crate::db::db::Database;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -14,29 +16,48 @@ struct Args {
 
 #[derive(Subcommand, Debug, Clone)]
 enum Commands {
-    Imi { key: String },
+    /// Look up the meaning of a Japanese word
+    Imi { 
+        key: String,
+        #[arg(short, long)]
+        verbose: bool
+    },
+    Save {
+        japanese: String,
+    },
+    List
 }
 
 #[tokio::main]
 async fn main() {
+
     let args = Args::parse();
+    let db = match Database::init_db("sqlite://jp.db").await {
+        Ok(db) => db,
+        Err(error) => {
+            eprint!("Failed to connect to database: {error}");
+            return;
+        }
+    };
 
     match args.cmd {
-        Commands::Imi { key } => print_meaning(key).await,
+        Commands::Imi { key, verbose } => imi_handler(&key, verbose).await,
+        Commands::Save { japanese } => save_handler(&japanese, &db).await,
+        Commands::List => todo!(),
     }
 }
 
-async fn print_meaning(key: String) {
+async fn imi_handler(key: &str, verbose: bool) {
     println!("{key}:\n");
 
-    match get_meaning(key).await {
-        Ok(response) => {
+    match (get_meaning(key).await, verbose) {
+        (Ok(response), true) => {
             for word in response.words {
                 println!("-----------------------\n");
                 println!("Kanji:\n {}\n", word.reading.kanji);
                 println!("Reading:\n {}\n", word.reading.kana);
                 for sense in word.senses {
-                    print!("Meaing:\n");
+                    println!("Meaning:");
                     for gloss in sense.glosses {
                         println!("{gloss}")
                     }
@@ -44,6 +65,33 @@ async fn print_meaning(key: String) {
                 }
             }
         },
-        Err(error) => eprint!("Error: {error}"),
+        (Ok(response), false) => {
+            for word in response.words {
+                println!("-----------------------\n");
+                for sense in word.senses {
+                    for gloss in sense.glosses {
+                        println!("{gloss}")
+                    }
+                    println!("");
+                }
+            }
+        }
+        (Err(error), _) => eprint!("Error: {error}"),
+    }
+}
+
+async fn save_handler(japanese: &str, db: &Database) {
+    let response = match get_meaning(japanese).await {
+        Ok(response) => response,
+        Err(error) => {
+            eprint!("Error: {error}");
+            return;
+        }
+    };
+
+    let meaning = &response.words[0].senses[0].glosses[0];
+
+    if let Err(error) = db.add_word(japanese, meaning).await {
+        eprint!("Error: {error}");
     }
 }
