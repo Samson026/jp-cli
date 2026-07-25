@@ -4,5 +4,5 @@ use sqlx::FromRow;
 pub struct Word {
     pub id: i64,
     pub japanese: String,
-    pub english: String
+    pub english: String,
 }

@@ -1,11 +1,11 @@
-mod models;
 mod api;
 mod db;
+mod models;
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
-use crate::{api::get_meaning, models::Sense};
+use crate::api::get_meaning;
 use crate::db::db::Database;
 
 #[derive(Parser, Debug)]
@@ -18,10 +18,10 @@ struct Args {
 #[derive(Subcommand, Debug, Clone)]
 enum Commands {
     /// Look up the meaning of a Japanese word
-    Imi { 
+    Imi {
         key: String,
         #[arg(short, long)]
-        verbose: bool
+        verbose: bool,
     },
     Add {
         japanese: String,
@@ -29,12 +29,11 @@ enum Commands {
     List,
     Remove {
         japanese: String,
-    }
+    },
 }
 
 #[tokio::main]
 async fn main() {
-
     let args = Args::parse();
 
     match args.cmd {
@@ -90,10 +89,10 @@ async fn imi_handler(key: &str, verbose: bool) {
                     for gloss in sense.glosses {
                         println!("{gloss}")
                     }
-                    println!("");
+                    println!();
                 }
             }
-        },
+        }
         (Ok(response), false) => {
             for word in response.words {
                 println!("-----------------------\n");
@@ -101,7 +100,7 @@ async fn imi_handler(key: &str, verbose: bool) {
                     for gloss in sense.glosses {
                         println!("{gloss}")
                     }
-                    println!("");
+                    println!();
                 }
             }
         }
@@ -147,8 +146,8 @@ async fn list_handler() {
             for word in words {
                 println!("{}: {}", word.japanese, word.english);
             }
-        },
-        Err(error) => eprint!("Error: {error}")
+        }
+        Err(error) => eprint!("Error: {error}"),
     }
 }
 

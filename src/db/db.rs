@@ -1,13 +1,11 @@
-
 use std::path::Path;
 
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
-use sqlx::sqlite::SqlitePoolOptions;
-use sqlx::Row;
 use super::models::Word;
+use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 
 pub struct Database {
-    pool: SqlitePool
+    pool: SqlitePool,
 }
 
 impl Database {
@@ -26,10 +24,10 @@ impl Database {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 japanese TEXT NOT NULL UNIQUE,
                 english TEXT NOT NULL
-            )"
+            )",
         )
-            .execute(&pool)
-            .await?;
+        .execute(&pool)
+        .await?;
 
         Ok(Self { pool })
     }
@@ -37,7 +35,7 @@ impl Database {
     pub async fn add_word(&self, japanese: &str, english: &str) -> Result<(), sqlx::Error> {
         sqlx::query(
             "INSERT INTO words (japanese, english)
-            VALUES (?, ?)", 
+            VALUES (?, ?)",
         )
         .bind(japanese)
         .bind(english)
@@ -48,20 +46,16 @@ impl Database {
     }
 
     pub async fn list_words(&self) -> Result<Vec<Word>, sqlx::Error> {
-        sqlx::query_as::<_, Word>(
-            "SELECT * FROM words"
-        )
-        .fetch_all(&self.pool)
-        .await
+        sqlx::query_as::<_, Word>("SELECT * FROM words")
+            .fetch_all(&self.pool)
+            .await
     }
 
     pub async fn remove_word(&self, word: &str) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            "DELETE FROM words WHERE japanese == ?"
-        )
-        .bind(word)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("DELETE FROM words WHERE japanese == ?")
+            .bind(word)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }
