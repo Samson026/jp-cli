@@ -6,7 +6,7 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 use crate::api::get_meaning;
-use crate::db::db::Database;
+use crate::db::Database;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

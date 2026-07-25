@@ -19,12 +19,10 @@ pub struct WordEntry {
 #[derive(Debug, Deserialize)]
 pub struct Sense {
     pub glosses: Vec<String>,
-    pub language: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Reading {
     pub kana: String,
     pub kanji: String,
-    pub furigana: String,
 }
