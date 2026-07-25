@@ -36,34 +36,37 @@ enum Commands {
 async fn main() {
 
     let args = Args::parse();
+
+    match args.cmd {
+        Commands::Imi { key, verbose } => imi_handler(&key, verbose).await,
+        Commands::Add { japanese } => add_handler(&japanese).await,
+        Commands::List => list_handler().await,
+        Commands::Remove { japanese } => remove_handler(&japanese).await,
+    }
+}
+
+async fn init_db() -> Option<Database> {
     let Some(home_dir) = home_dir() else {
         eprintln!("Could not determine the user's home directory");
-        return;
+        return None;
     };
 
     let db_dir = home_dir.join(".jp-cli");
     if let Err(error) = std::fs::create_dir_all(&db_dir) {
         eprintln!("Failed to create {}: {error}", db_dir.display());
-        return;
+        return None;
     }
 
     let db_path = db_dir.join("jp.db");
-    let db = match Database::init_db(&db_path).await {
-        Ok(db) => db,
+    match Database::init_db(&db_path).await {
+        Ok(db) => Some(db),
         Err(error) => {
             eprintln!(
                 "Failed to connect to database at {}: {error}",
                 db_path.display()
             );
-            return;
+            None
         }
-    };
-
-    match args.cmd {
-        Commands::Imi { key, verbose } => imi_handler(&key, verbose).await,
-        Commands::Add { japanese } => add_handler(&japanese, &db).await,
-        Commands::List => list_handler(&db).await,
-        Commands::Remove { japanese } => remove_handler(&japanese, &db).await,
     }
 }
 
@@ -106,7 +109,11 @@ async fn imi_handler(key: &str, verbose: bool) {
     }
 }
 
-async fn add_handler(japanese: &str, db: &Database) {
+async fn add_handler(japanese: &str) {
+    let Some(db) = init_db().await else {
+        return;
+    };
+
     let response = match get_meaning(japanese).await {
         Ok(response) => response,
         Err(error) => {
@@ -130,7 +137,11 @@ async fn add_handler(japanese: &str, db: &Database) {
     }
 }
 
-async fn list_handler(db: &Database) {
+async fn list_handler() {
+    let Some(db) = init_db().await else {
+        return;
+    };
+
     match db.list_words().await {
         Ok(words) => {
             for word in words {
@@ -141,7 +152,11 @@ async fn list_handler(db: &Database) {
     }
 }
 
-async fn remove_handler(word: &str, db: &Database) {
+async fn remove_handler(word: &str) {
+    let Some(db) = init_db().await else {
+        return;
+    };
+
     if let Err(error) = db.remove_word(word).await {
         eprint!("Error: {error}")
     }
