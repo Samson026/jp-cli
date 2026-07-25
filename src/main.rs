@@ -25,7 +25,10 @@ enum Commands {
     Add {
         japanese: String,
     },
-    List
+    List,
+    Remove {
+        japanese: String,
+    }
 }
 
 #[tokio::main]
@@ -44,6 +47,7 @@ async fn main() {
         Commands::Imi { key, verbose } => imi_handler(&key, verbose).await,
         Commands::Add { japanese } => add_handler(&japanese, &db).await,
         Commands::List => list_handler(&db).await,
+        Commands::Remove { japanese } => remove_handler(&japanese, &db).await,
     }
 }
 
@@ -104,5 +108,11 @@ async fn list_handler(db: &Database) {
             }
         },
         Err(error) => eprint!("Error: {error}")
+    }
+}
+
+async fn remove_handler(word: &str, db: &Database) {
+    if let Err(error) = db.remove_word(word).await {
+        eprint!("Error: {error}")
     }
 }

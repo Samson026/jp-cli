@@ -49,4 +49,15 @@ impl Database {
         .fetch_all(&self.pool)
         .await
     }
+
+    pub async fn remove_word(&self, word: &str) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            "DELETE FROM words WHERE japanese == ?"
+        )
+        .bind(word)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
 }
