@@ -32,12 +32,15 @@ async fn print_meaning(key: String) {
     match get_meaning(key).await {
         Ok(response) => {
             for word in response.words {
+                println!("-----------------------\n");
+                println!("Kanji:\n {}\n", word.reading.kanji);
                 println!("Reading:\n {}\n", word.reading.kana);
                 for sense in word.senses {
                     print!("Meaing:\n");
                     for gloss in sense.glosses {
                         println!("{gloss}")
                     }
+                    println!("");
                 }
             }
         },
