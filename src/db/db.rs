@@ -1,6 +1,7 @@
 
+use std::path::Path;
 
-use sqlx::sqlite::SqlitePool;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::Row;
 use super::models::Word;
@@ -10,10 +11,14 @@ pub struct Database {
 }
 
 impl Database {
-    pub async fn init_db(db_url: &str) -> Result<Self, sqlx::Error> {
+    pub async fn init_db(db_path: &Path) -> Result<Self, sqlx::Error> {
+        let options = SqliteConnectOptions::new()
+            .filename(db_path)
+            .create_if_missing(true);
+
         let pool = SqlitePoolOptions::new()
             .max_connections(5)
-            .connect(db_url)
+            .connect_with(options)
             .await?;
 
         sqlx::query(

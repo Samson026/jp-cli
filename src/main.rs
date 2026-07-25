@@ -3,6 +3,7 @@ mod api;
 mod db;
 
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 use crate::{api::get_meaning, models::Sense};
 use crate::db::db::Database;
@@ -35,10 +36,25 @@ enum Commands {
 async fn main() {
 
     let args = Args::parse();
-    let db = match Database::init_db("sqlite://jp.db?mode=rwc").await {
+    let Some(home_dir) = home_dir() else {
+        eprintln!("Could not determine the user's home directory");
+        return;
+    };
+
+    let db_dir = home_dir.join(".jp-cli");
+    if let Err(error) = std::fs::create_dir_all(&db_dir) {
+        eprintln!("Failed to create {}: {error}", db_dir.display());
+        return;
+    }
+
+    let db_path = db_dir.join("jp.db");
+    let db = match Database::init_db(&db_path).await {
         Ok(db) => db,
         Err(error) => {
-            eprint!("Failed to connect to database: {error}");
+            eprintln!(
+                "Failed to connect to database at {}: {error}",
+                db_path.display()
+            );
             return;
         }
     };
@@ -49,6 +65,12 @@ async fn main() {
         Commands::List => list_handler(&db).await,
         Commands::Remove { japanese } => remove_handler(&japanese, &db).await,
     }
+}
+
+fn home_dir() -> Option<PathBuf> {
+    std::env::var_os("HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .map(PathBuf::from)
 }
 
 async fn imi_handler(key: &str, verbose: bool) {
@@ -93,10 +115,18 @@ async fn add_handler(japanese: &str, db: &Database) {
         }
     };
 
-    let meaning = &response.words[0].senses[0].glosses[0];
+    let Some(meaning) = response
+        .words
+        .first()
+        .and_then(|word| word.senses.first())
+        .and_then(|sense| sense.glosses.first())
+    else {
+        eprintln!("No meaning found for '{japanese}'");
+        return;
+    };
 
     if let Err(error) = db.add_word(japanese, meaning).await {
-        eprint!("Error: {error}");
+        eprintln!("Error: {error}");
     }
 }
 
