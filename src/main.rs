@@ -4,8 +4,8 @@ mod models;
 mod tui;
 
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
 use std::io;
+use std::path::PathBuf;
 
 use crate::api::get_meaning;
 use crate::db::Database;
@@ -33,7 +33,7 @@ enum Commands {
     Remove {
         japanese: String,
     },
-    Tui
+    Tui,
 }
 
 #[tokio::main]
