@@ -20,12 +20,13 @@ pub struct App {
     exit: bool,
     words: Vec<Word>,
     input: String,
-    translation: String
+    translation: String,
+    trans_scroll: u16
 }
 
 impl App {
     pub fn new(words: Vec<Word>) -> Self {
-        Self { words, exit: false, counter: 0, input: String::new(), translation: String::new()}
+        Self { words, exit: false, counter: 0, input: String::new(), translation: String::new(), trans_scroll: 0}
     }
 
     pub async fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
@@ -60,6 +61,12 @@ impl App {
                 self.input.pop();
             }
             KeyCode::Enter => self.update_meaning().await,
+            KeyCode::Down => {
+                self.trans_scroll = self.trans_scroll.saturating_add(1);
+            }
+            KeyCode::Up => {
+                self.trans_scroll = self.trans_scroll.saturating_sub(1);
+            }
             _ => {}
         }
     }
@@ -89,6 +96,7 @@ impl App {
                             self.translation.push('\n');
                         }
                     }
+                    self.translation.push_str("\n----------------\n\n");
                 }
             }
             Err(error) => {
@@ -161,6 +169,7 @@ impl Widget for &App {
         Paragraph::new(self.translation.as_str())
             .block(Block::bordered().title("Translation"))
             .wrap(Wrap { trim: false })
+            .scroll((self.trans_scroll, 0))
             .render(translation_area, buf);
 
 
