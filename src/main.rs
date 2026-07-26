@@ -1,12 +1,15 @@
 mod api;
 mod db;
 mod models;
+mod tui;
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use std::io;
 
 use crate::api::get_meaning;
 use crate::db::Database;
+use crate::tui::App;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -30,6 +33,7 @@ enum Commands {
     Remove {
         japanese: String,
     },
+    Tui
 }
 
 #[tokio::main]
@@ -41,6 +45,7 @@ async fn main() {
         Commands::Add { japanese } => add_handler(&japanese).await,
         Commands::List => list_handler().await,
         Commands::Remove { japanese } => remove_handler(&japanese).await,
+        Commands::Tui => tui_handler().expect("REASON"),
     }
 }
 
@@ -159,4 +164,8 @@ async fn remove_handler(word: &str) {
     if let Err(error) = db.remove_word(word).await {
         eprint!("Error: {error}")
     }
+}
+
+fn tui_handler() -> io::Result<()> {
+    ratatui::run(|terminal| App::default().run(terminal))
 }
