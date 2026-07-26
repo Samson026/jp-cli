@@ -3,20 +3,28 @@ use std::io;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Flex, Layout, Rect},
     style::Stylize,
     symbols::border,
     text::{Line, Text},
-    widgets::{Block, Paragraph, Widget},
+    widgets::{Block, Paragraph, Widget, ListDirection, List},
     DefaultTerminal, Frame,
 };
+
+use crate::db::models::Word;
+
 #[derive(Debug, Default)]
 pub struct App {
     counter: u8,
-    exit: bool
+    exit: bool,
+    words: Vec<Word>
 }
 
 impl App {
+    pub fn new(words: Vec<Word>) -> Self {
+        Self { words, exit: false, counter: 0}
+    }
+
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
             terminal.draw(|frame| self.draw(frame))?;
@@ -70,8 +78,8 @@ impl Widget for &App {
         .areas(area);
 
         let [left_area, right_area] = Layout::horizontal([
-            Constraint::Percentage(50),
-            Constraint::Percentage(50)
+            Constraint::Percentage(60),
+            Constraint::Percentage(40)
         ])
         .areas(body_area);
         
@@ -80,16 +88,36 @@ impl Widget for &App {
             .centered()
             .block(Block::bordered())
             .render(title_area, buf);
-        
-        Paragraph::new("left")
-            .centered()
-            .block(Block::bordered())
-            .render(left_area, buf);
 
-        Paragraph::new("right")
-            .centered()
-            .block(Block::bordered())
-            .render(right_area, buf);
+
+        let japanese = self.words
+            .iter()
+            .map(|word| word.japanese.clone());
+        let english = self.words
+            .iter()
+            .map(|word| word.english.clone());
+
+        
+        let block = Block::bordered().title(Line::from("Words").centered());
+        let inner = block.inner(right_area);
+        block.render(right_area, buf);
+
+        let [jap_area, english_area] = Layout::horizontal([
+            Constraint::Percentage(20),
+            Constraint::Percentage(20),
+        ])
+        .flex(Flex::Center)
+        .areas(inner);
+
+
+        List::new(english)
+            .render(english_area, buf);
+        List::new(japanese)
+            .render(jap_area, buf);
+
+        let left_block = Block::bordered().title(Line::from("Search").centered());
+        let left_block_inner = left_block.inner(left_area);
+        left_block.render(left_area, buf);
 
 
 

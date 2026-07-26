@@ -45,7 +45,7 @@ async fn main() {
         Commands::Add { japanese } => add_handler(&japanese).await,
         Commands::List => list_handler().await,
         Commands::Remove { japanese } => remove_handler(&japanese).await,
-        Commands::Tui => tui_handler().expect("REASON"),
+        Commands::Tui => tui_handler().await.expect("REASON"),
     }
 }
 
@@ -166,6 +166,19 @@ async fn remove_handler(word: &str) {
     }
 }
 
-fn tui_handler() -> io::Result<()> {
-    ratatui::run(|terminal| App::default().run(terminal))
+async fn tui_handler() -> io::Result<()> {
+    let Some(db) = init_db().await else {
+        return Ok(());
+    };
+
+    let words = match db.list_words().await {
+        Ok(words) => words,
+        Err(error) => {
+            eprintln!("Database error {error}");
+            return Ok(());
+        }
+    };
+
+    let mut app = App::new(words);
+    ratatui::run(|terminal| app.run(terminal))
 }
