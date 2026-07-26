@@ -1,12 +1,15 @@
 mod api;
 mod db;
 mod models;
+mod tui;
 
 use clap::{Parser, Subcommand};
+use std::io;
 use std::path::PathBuf;
 
 use crate::api::get_meaning;
 use crate::db::Database;
+use crate::tui::App;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -30,6 +33,7 @@ enum Commands {
     Remove {
         japanese: String,
     },
+    Tui,
 }
 
 #[tokio::main]
@@ -41,6 +45,7 @@ async fn main() {
         Commands::Add { japanese } => add_handler(&japanese).await,
         Commands::List => list_handler().await,
         Commands::Remove { japanese } => remove_handler(&japanese).await,
+        Commands::Tui => tui_handler().await.expect("REASON"),
     }
 }
 
@@ -82,7 +87,10 @@ async fn imi_handler(key: &str, verbose: bool) {
         (Ok(response), true) => {
             for word in response.words {
                 println!("-----------------------\n");
-                println!("Kanji:\n {}\n", word.reading.kanji);
+                println!(
+                    "Kanji:\n {}\n",
+                    word.reading.kanji.as_deref().unwrap_or("—")
+                );
                 println!("Reading:\n {}\n", word.reading.kana);
                 for sense in word.senses {
                     println!("Meaning:");
@@ -159,4 +167,28 @@ async fn remove_handler(word: &str) {
     if let Err(error) = db.remove_word(word).await {
         eprint!("Error: {error}")
     }
+}
+
+async fn tui_handler() -> io::Result<()> {
+    let Some(db) = init_db().await else {
+        return Ok(());
+    };
+
+    let words = match db.list_words().await {
+        Ok(words) => words,
+        Err(error) => {
+            eprintln!("Database error {error}");
+            return Ok(());
+        }
+    };
+
+    let mut app = App::new(words);
+    let mut terminal = ratatui::init();
+    let result = match terminal.clear() {
+        Ok(()) => app.run(&mut terminal).await,
+        Err(error) => Err(error),
+    };
+
+    ratatui::restore();
+    result
 }

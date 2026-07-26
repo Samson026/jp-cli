@@ -6,6 +6,7 @@ use models::Word;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 
+#[derive(Debug)]
 pub struct Database {
     pool: SqlitePool,
 }
