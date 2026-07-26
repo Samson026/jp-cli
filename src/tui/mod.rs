@@ -14,7 +14,6 @@ use crate::db::models::Word;
 
 #[derive(Debug, Default)]
 pub struct App {
-    counter: u8,
     exit: bool,
     words: Vec<Word>,
     input: String,
@@ -27,7 +26,6 @@ impl App {
         Self {
             words,
             exit: false,
-            counter: 0,
             input: String::new(),
             translation: String::new(),
             trans_scroll: 0,
@@ -59,13 +57,14 @@ impl App {
     async fn handle_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
-            KeyCode::Left => self.decrement_counter(),
-            KeyCode::Right => self.increment_counter(),
             KeyCode::Char(c) => self.input.push(c),
             KeyCode::Backspace => {
                 self.input.pop();
             }
-            KeyCode::Enter => self.update_meaning().await,
+            KeyCode::Enter => {
+                self.trans_scroll = 0;
+                self.update_meaning().await;
+            }
             KeyCode::Down => {
                 self.trans_scroll = self.trans_scroll.saturating_add(1);
             }
@@ -80,21 +79,16 @@ impl App {
         self.exit = true;
     }
 
-    fn increment_counter(&mut self) {
-        self.counter += 1;
-    }
-
-    fn decrement_counter(&mut self) {
-        self.counter -= 1;
-    }
-
     async fn update_meaning(&mut self) {
         match get_meaning(&self.input).await {
             Ok(response) => {
                 self.translation = String::new();
                 for word in response.words {
-                    self.translation
-                        .push_str(word.reading.kanji.as_deref().unwrap_or(&word.reading.kana));
+                    if let Some(kanji) = word.reading.kanji.as_deref() {
+                        self.translation.push_str(kanji);
+                        self.translation.push('\n');
+                    }
+                    self.translation.push_str(&word.reading.kana);
                     self.translation.push_str("\n\n");
                     for sense in word.senses {
                         for gloss in sense.glosses {
