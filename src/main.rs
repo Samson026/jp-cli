@@ -87,7 +87,10 @@ async fn imi_handler(key: &str, verbose: bool) {
         (Ok(response), true) => {
             for word in response.words {
                 println!("-----------------------\n");
-                println!("Kanji:\n {}\n", word.reading.kanji);
+                println!(
+                    "Kanji:\n {}\n",
+                    word.reading.kanji.as_deref().unwrap_or("—")
+                );
                 println!("Reading:\n {}\n", word.reading.kana);
                 for sense in word.senses {
                     println!("Meaning:");
@@ -181,8 +184,11 @@ async fn tui_handler() -> io::Result<()> {
 
     let mut app = App::new(words);
     let mut terminal = ratatui::init();
-    terminal.clear()?;
-    let result = app.run(&mut terminal).await;
+    let result = match terminal.clear() {
+        Ok(()) => app.run(&mut terminal).await,
+        Err(error) => Err(error),
+    };
 
+    ratatui::restore();
     result
 }

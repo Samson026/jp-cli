@@ -24,5 +24,5 @@ pub struct Sense {
 #[derive(Debug, Deserialize)]
 pub struct Reading {
     pub kana: String,
-    pub kanji: String,
+    pub kanji: Option<String>,
 }

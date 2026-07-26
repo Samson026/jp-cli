@@ -88,7 +88,12 @@ impl App {
             Ok(response) => {
                 self.translation = String::new();
                 for word in response.words {
-                    self.translation.push_str(&word.reading.kanji);
+                    self.translation.push_str(
+                        word.reading
+                            .kanji
+                            .as_deref()
+                            .unwrap_or(&word.reading.kana),
+                    );
                     self.translation.push_str("\n\n");
                     for sense in word.senses {
                         for gloss in sense.glosses {
