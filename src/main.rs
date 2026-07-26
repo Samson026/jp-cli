@@ -180,5 +180,9 @@ async fn tui_handler() -> io::Result<()> {
     };
 
     let mut app = App::new(words);
-    ratatui::run(|terminal| app.run(terminal))
+    let mut terminal = ratatui::init();
+    terminal.clear()?;
+    let result = app.run(&mut terminal).await;
+
+    result
 }
