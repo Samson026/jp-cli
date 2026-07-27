@@ -1,8 +1,8 @@
 use crate::api::get_meaning;
 use crate::db::Database;
 use crate::tui::App;
-use std::path::PathBuf;
 use std::io;
+use std::path::PathBuf;
 
 async fn init_db() -> Option<Database> {
     let Some(home_dir) = home_dir() else {

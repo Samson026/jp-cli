@@ -1,7 +1,7 @@
 mod api;
+mod cli;
 mod db;
 mod tui;
-mod cli;
 
 use clap::{Parser, Subcommand};
 
