@@ -1,15 +1,14 @@
 mod api;
 mod db;
-mod models;
 mod tui;
 
 use clap::{Parser, Subcommand};
 use std::io;
 use std::path::PathBuf;
 
-use crate::api::get_meaning;
-use crate::db::Database;
-use crate::tui::App;
+use api::get_meaning;
+use db::Database;
+use tui::App;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

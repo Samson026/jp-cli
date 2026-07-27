@@ -1,5 +1,7 @@
-use crate::models::DictionaryResponse;
-use crate::models::SearchRequest;
+pub mod models;
+
+use models::DictionaryResponse;
+use models::SearchRequest;
 
 pub async fn get_meaning(word: &str) -> Result<DictionaryResponse, reqwest::Error> {
     let client = reqwest::Client::new();
