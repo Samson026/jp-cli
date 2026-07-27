@@ -31,7 +31,7 @@ enum Commands {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> std::io::Result<()> {
     let args = Args::parse();
 
     match args.cmd {
@@ -39,6 +39,6 @@ async fn main() {
         Commands::Add { japanese } => cli::add_handler(&japanese).await,
         Commands::List => cli::list_handler().await,
         Commands::Remove { japanese } => cli::remove_handler(&japanese).await,
-        Commands::Tui => cli::tui_handler().await.expect("REASON"),
+        Commands::Tui => cli::tui_handler().await,
     }
 }

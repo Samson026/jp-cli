@@ -35,7 +35,7 @@ fn home_dir() -> Option<PathBuf> {
         .map(PathBuf::from)
 }
 
-pub async fn imi_handler(key: &str, verbose: bool) {
+pub async fn imi_handler(key: &str, verbose: bool) -> io::Result<()> {
     println!("{key}:\n");
 
     match (get_meaning(key).await, verbose) {
@@ -67,20 +67,26 @@ pub async fn imi_handler(key: &str, verbose: bool) {
                 }
             }
         }
-        (Err(error), _) => eprint!("Error: {error}"),
+        (Err(error), _) => {
+            return Err(io::Error::other(format!(
+                "Dictionary lookup failed: {error}"
+            )));
+        }
     }
+    Ok(())
 }
 
-pub async fn add_handler(japanese: &str) {
+pub async fn add_handler(japanese: &str) -> io::Result<()> {
     let Some(db) = init_db().await else {
-        return;
+        return Err(io::Error::other("Could not connect to db"));
     };
 
     let response = match get_meaning(japanese).await {
         Ok(response) => response,
         Err(error) => {
-            eprint!("Error: {error}");
-            return;
+            return Err(io::Error::other(format!(
+                "Failed to look up '{japanese}': {error}"
+            )));
         }
     };
 
@@ -90,18 +96,22 @@ pub async fn add_handler(japanese: &str) {
         .and_then(|word| word.senses.first())
         .and_then(|sense| sense.glosses.first())
     else {
-        eprintln!("No meaning found for '{japanese}'");
-        return;
+        return Err(io::Error::other(format!(
+            "No meaning found for '{japanese}'"
+        )));
     };
 
     if let Err(error) = db.add_word(japanese, meaning).await {
-        eprintln!("Error: {error}");
+        return Err(io::Error::other(format!(
+            "Failed to add '{japanese}': {error}"
+        )));
     }
+    Ok(())
 }
 
-pub async fn list_handler() {
+pub async fn list_handler() -> io::Result<()> {
     let Some(db) = init_db().await else {
-        return;
+        return Err(io::Error::other("Could not connect to db"));
     };
 
     match db.list_words().await {
@@ -110,18 +120,25 @@ pub async fn list_handler() {
                 println!("{}: {}", word.japanese, word.english);
             }
         }
-        Err(error) => eprint!("Error: {error}"),
+        Err(error) => {
+            return Err(io::Error::other(format!("Failed to list words: {error}")));
+        }
     }
+    Ok(())
 }
 
-pub async fn remove_handler(word: &str) {
+pub async fn remove_handler(word: &str) -> io::Result<()> {
     let Some(db) = init_db().await else {
-        return;
+        return Err(io::Error::other("Could not connect to db"));
     };
 
     if let Err(error) = db.remove_word(word).await {
-        eprint!("Error: {error}")
+        return Err(io::Error::other(format!(
+            "Failed to remove '{word}': {error}"
+        )));
     }
+
+    Ok(())
 }
 
 pub async fn tui_handler() -> io::Result<()> {
